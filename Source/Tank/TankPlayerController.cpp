@@ -10,6 +10,7 @@ void ATankPlayerController::BeginPlay()
 	Super::BeginPlay();
 
 	TankPawn = Cast<ATankPawn>(GetPawn());
+	bShowMouseCursor = true;
 }
 
 void ATankPlayerController::SetupInputComponent()
@@ -19,11 +20,11 @@ void ATankPlayerController::SetupInputComponent()
 	InputComponent->BindAxis("RotateRight", this, &ATankPlayerController::RotateRight);
 	InputComponent->BindAction("Fire", IE_Pressed, this, &ATankPlayerController::Fire);
 	InputComponent->BindAction("FireSpecial", IE_Pressed, this, &ATankPlayerController::FireSpecial);
+	InputComponent->BindAction("CycleCannon", IE_Pressed, this, &ATankPlayerController::CycleCannon);
 }
 
 void ATankPlayerController::Tick(float DeltaSeconds)
 {
-
 	Super::Tick(DeltaSeconds);
 
 	if (!TankPawn)
@@ -72,6 +73,15 @@ void ATankPlayerController::FireSpecial()
 	if (TankPawn)
 	{
 		TankPawn->FireSpecial();
+	}
+
+}
+
+void ATankPlayerController::CycleCannon()
+{
+	if (TankPawn)
+	{
+		TankPawn->CycleCannon();
 	}
 
 }

@@ -22,11 +22,15 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	UPROPERTY()
+	int32 Scores;
+
 private:
 	void MoveForward(float InAxisValue);
 	void RotateRight(float InAxisValue);
 	void Fire();
 	void FireSpecial();
+	void CycleCannon();
 
 	UPROPERTY()
 		class ATankPawn* TankPawn;

@@ -22,10 +22,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire params")
 	float FireRate = 1.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire params")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (EditCondition = "Type == ECannonType::FireTrace", EditConditionHides), Category = "Fire params")
 	float FireRange = 1000.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire params")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (EditCondition = "Type == ECannonType::FireTrace", EditConditionHides), Category = "Fire params")
 	float FireDamage = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire params")
@@ -43,6 +43,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire params")
 	ECannonType Type = ECannonType::FireProjectile;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (EditCondition = "Type == ECannonType::FireProjectile", EditConditionHides), Category = "Fire params")
+	TSubclassOf<class AProjectile> ProjectileClass;
+
 private:
 	FTimerHandle ReloadTimerHandle;
 	FTimerHandle SeriesTimerHandle;
@@ -57,8 +60,11 @@ public:
 
 	bool IsReadyToFire();
 	bool HasSpecialFire() const;
+	void SetVisibility(bool bIsVisible);
+	void AddAmmo(int32 InNumAmmo);
+
 protected:
-	// Called when the game starts or when spawned
+
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 

@@ -8,6 +8,9 @@
 #include "TimerManager.h"
 #include "Engine/Engine.h"
 #include "Tank.h"
+#include "Projectile.h"
+#include "Damageable.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 ACannon::ACannon()
@@ -44,9 +47,15 @@ void ACannon::FireSpecial()
 	}
 	bIsReadyToFire = false;
 	--NumAmmo;
+
 	if (Type == ECannonType::FireProjectile)
 	{
 		GEngine->AddOnScreenDebugMessage(10, 1, FColor::Green, TEXT("Fire special - projectile"));
+		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentLocation(), ProjectileSpawnPoint->GetComponentRotation());
+		if (Projectile)
+		{
+			Projectile->Start();
+		}
 	}
 	else if (Type == ECannonType::FireTrace)
 	{
@@ -64,6 +73,16 @@ bool ACannon::IsReadyToFire()
 bool ACannon::HasSpecialFire() const
 {
 	return bHasSpecialFire;
+}
+
+void ACannon::SetVisibility(bool bIsVisible)
+{
+	Mesh->SetHiddenInGame(!bIsVisible);
+}
+
+void ACannon::AddAmmo(int32 InNumAmmo)
+{
+	NumAmmo = FMath::Clamp(NumAmmo + InNumAmmo, 0, MaxAmmo);
 }
 
 // Called when the game starts or when spawned
@@ -96,10 +115,46 @@ void ACannon::Shot()
 	if (Type == ECannonType::FireProjectile)
 	{
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1, FColor::Green, TEXT("Fire - projectile"));
+		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(ProjectileClass, ProjectileSpawnPoint->GetComponentLocation(), ProjectileSpawnPoint->GetComponentRotation());
+		if (Projectile)
+		{
+			Projectile->SetInstigator(GetInstigator());
+			Projectile->Start();
+		}
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 1, FColor::Green, TEXT("Fire - trace"));
+
+		FHitResult HitResult;
+		FVector TraceStart = ProjectileSpawnPoint->GetComponentLocation();
+		FVector TraceEnd = ProjectileSpawnPoint->GetComponentLocation() + ProjectileSpawnPoint->GetForwardVector() * FireRange;
+		FCollisionQueryParams TraceParams = FCollisionQueryParams (FName(TEXT("FireTrace")), true, this);
+		TraceParams.bReturnPhysicalMaterial = false;
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, TraceParams))
+		{
+			DrawDebugLine(GetWorld(), TraceStart, HitResult.Location, FColor::Red, false, 0.5f, 0, 5.f);
+			if (HitResult.Actor.IsValid() && HitResult.Component.IsValid(), HitResult.Component->GetCollisionObjectType() == ECC_Destructible)
+			{
+				HitResult.Actor->Destroy();
+			}
+		}
+		else if (IDamageable* Damageable = Cast<IDamageable>(HitResult.Actor))
+		{
+			AActor* MyInstigator = GetInstigator();
+			if (HitResult.Actor != MyInstigator)
+			{
+				FDamageData DamageData;
+				DamageData.DamageValue = FireDamage;
+				DamageData.DamageMaker = this;
+				DamageData.Instigator = MyInstigator;
+				Damageable->TakeDamage(DamageData);
+			}
+		}
+		else
+		{
+			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 0.5f, 0, 5.f);
+		}
 	}
 
 	if (--ShotsLeft > 0)

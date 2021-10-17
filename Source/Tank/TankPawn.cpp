@@ -6,10 +6,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/ArrowComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Math/UnrealMathUtility.h"
 #include <Runtime/Engine/Classes/Kismet/KismetMathLibrary.h>
 #include "Tank.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Cannon.h"
+#include "Components/BoxComponent.h"
+#include "HealthComponent.h"
 
 
 // Sets default values
@@ -37,13 +40,25 @@ ATankPawn::ATankPawn()
 	CannonSpawnPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("Spawn point"));
 	CannonSpawnPoint->SetupAttachment(TurretMesh);
 
+	HitCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("Hit collider"));
+	HitCollider->SetupAttachment(BodyMesh);
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health component"));
+	HealthComponent->OnDie.AddDynamic(this, &ATankPawn::OnDie);
+	HealthComponent->OnHealthChanged.AddDynamic(this, &ATankPawn::OnHealthChanged);
+}
+
+int32 ATankPawn::GetScores() const
+{
+	return DestructionScores;
 }
 
 // Called when the game starts or when spawned
 void ATankPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	SetupCannon();
+
+	SetupCannon(DefaultCannonClass);
 }
 
 // Called every frame
@@ -54,8 +69,7 @@ void ATankPawn::Tick(float DeltaTime)
 	CurrentMoveForwardAxis = FMath::FInterpTo(CurrentMoveForwardAxis, TargetMoveForwardAxis, DeltaTime, MovementSmoothness);
 	FVector MoveVector = GetActorForwardVector() * CurrentMoveForwardAxis;
 	FVector NewActorLocation = GetActorLocation() + MoveVector * MoveSpeed * DeltaTime;
-
-	SetActorLocation(NewActorLocation);
+	SetActorLocation(NewActorLocation, true);
 
 	CurrentRotateRightAxis = FMath::FInterpTo(CurrentRotateRightAxis, TargetRotateRightAxis, DeltaTime, RotationSmoothness);
 	float Rotation = GetActorRotation().Yaw + CurrentRotateRightAxis * RotationSpeed * DeltaTime;
@@ -85,33 +99,71 @@ void ATankPawn::SetTurretTargetPosition(const FVector& TargetPosition)
 
 void ATankPawn::Fire()
 {
-	if (Cannon)
+	if (ActiveCannon)
 	{
-		Cannon->Fire();
+		ActiveCannon->Fire();
 	}
 }
 
 void ATankPawn::FireSpecial()
 {
-	if (Cannon)
+	if (ActiveCannon)
 	{
-		Cannon->FireSpecial();
+		ActiveCannon->FireSpecial();
 	}
 }
 
-void ATankPawn::SetupCannon()
+void ATankPawn::SetupCannon(TSubclassOf<class ACannon> InCannonClass)
 {
-	if (Cannon)
+	if (ActiveCannon)
 	{
-		Cannon->Destroy();
+		ActiveCannon->Destroy();
 	}
-	FActorSpawnParameters Params;
-	Params.Instigator = this;
-	Params.Owner = this;
-	Cannon = GetWorld()->SpawnActor<ACannon>(DefaultCannonClass, Params);
-	Cannon->AttachToComponent(CannonSpawnPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	if (InCannonClass)
+	{
+		FActorSpawnParameters Params;
+		Params.Instigator = this;
+		Params.Owner = this;
+		ActiveCannon = GetWorld()->SpawnActor<ACannon>(InCannonClass, Params);
+		ActiveCannon->AttachToComponent(CannonSpawnPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	}
+	
 }
 
+void ATankPawn::CycleCannon()
+{
+	Swap(ActiveCannon, InactiveCannon);
+	if (ActiveCannon)
+	{
+		ActiveCannon->SetVisibility(true);
+	}
+
+	if (InactiveCannon)
+	{
+		InactiveCannon->SetVisibility(false);
+	}
+}
+
+ACannon* ATankPawn::GetActiveCannon() const
+{
+	return ActiveCannon;
+}
+
+void ATankPawn::TakeDamage(const FDamageData& DamageData)
+{
+	HealthComponent->TakeDamage(DamageData);
+}
+
+void ATankPawn::OnHealthChanged_Implementation(float Damage)
+{
+
+}
+
+void ATankPawn::OnDie_Implementation()
+{
+	Destroy();
+}
 // Called to bind functionality to input
 void ATankPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
