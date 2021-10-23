@@ -17,6 +17,6 @@ class TANK_API ATankGameModeBase : public AGameModeBase
 
 public:
 
-	void NotifyActorWasDestroyedByDamage(AACtor* Actor, const FDamageData& DamageData);
+	void NotifyActorWasDestroyedByDamage(AActor* Actor, const FDamageData& DamageData);
 	
 };

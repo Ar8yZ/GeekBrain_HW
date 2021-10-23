@@ -23,7 +23,7 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY()
-	int32 Scores;
+	int32 Score;
 
 private:
 	void MoveForward(float InAxisValue);
@@ -34,5 +34,8 @@ private:
 
 	UPROPERTY()
 		class ATankPawn* TankPawn;
+
+	FVector2D LastFrameMousePosition;
+	bool bIsControllingFromMouse = false;
 	
 };

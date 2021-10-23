@@ -12,6 +12,8 @@
 #include "Tank.h"
 #include "UObject/NoExportTypes.h"
 #include "HealthComponent.h"
+#include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ATurret::ATurret()
@@ -99,7 +101,32 @@ void ATurret::RotateToPlayer()
 
 bool ATurret::IsPlayerInRange()
 {
-	return FVector::DistSquared(PlayerPawn->GetActorLocation(), GetActorLocation()) <= FMath::Square(TargetingRange);
+	if (FVector::DistSquared(PlayerPawn->GetActorLocation(), GetActorLocation()) > FMath::Square(TargetingRange))
+	{
+		return false;
+	}
+
+	FHitResult HitResult;
+	FVector TraceStart = GetActorLocation();
+	FVector TraceEnd = PlayerPawn->GetActorLocation();
+	FCollisionQueryParams TraceParams = FCollisionQueryParams(FName(TEXT("Turret Vision Trace")), true, this);
+	TraceParams.bReturnPhysicalMaterial = false;
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, TraceParams))
+	{
+		DrawDebugLine(GetWorld(), TraceStart, HitResult.Location, FColor::Red, false, 0.1f, 0, 5);
+		if (HitResult.Actor == PlayerPawn)
+		{
+			return true;
+		}
+
+	}
+	else
+	{
+		DrawDebugLine(GetWorld(), TraceStart, HitResult.Location, FColor::Red, false, 0.1f, 0, 5);
+	}
+
+	return false;
 }
 
 bool ATurret::CanFire()
@@ -125,7 +152,9 @@ void ATurret::OnHealthChanged_Implementation(float Damage)
 }
 
 void ATurret::OnDie_Implementation()
-{
+{ 
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DestructionParticleSystem, GetActorTransform());
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), DestructionSound, GetActorLocation());
 	Destroy();
 }
 
@@ -146,8 +175,8 @@ void ATurret::TakeDamage(const FDamageData& DamageData)
 	HealthComponent->TakeDamage(DamageData);
 }
 
-int32 ATurret::GetScores() const
+int32 ATurret::GetScore() const
 {
-	return DestructionScores;
+	return DestructionScore;
 }
 

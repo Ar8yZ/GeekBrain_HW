@@ -43,7 +43,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Turret")
 		TSubclassOf<class ACannon> DefaultCannonClass;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Scores")
-		int32 DestructionScores = 10;
+		int32 DestructionScore = 10;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Move params", Meta = (MakeEditWidget = true))
+		TArray<class ATargetPoint*> PatrollingPoints;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Move params")
+		float MovementAccuracy = 50.f;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, Category = "Components")
 		USpringArmComponent* SpringArm;
@@ -82,6 +86,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Turret")
 		void SetTurretTargetPosition(const FVector& TargetPosition);
 	UFUNCTION(BlueprintCallable, Category = "Turret")
+		void SetTurretRotationAxis(float AxisValue);
+	UFUNCTION(BlueprintCallable, Category = "Turret")
 		void Fire();
 	UFUNCTION(BlueprintCallable, Category = "Turret")
 		void FireSpecial();
@@ -89,11 +95,32 @@ public:
 	void SetupCannon(TSubclassOf<class ACannon> InCannonClass);
 	UFUNCTION(BlueprintCallable, Category = "Turret")
 	void CycleCannon();
-	UFUNCTION(BlueprintCallable, Category = "Turret")
+	UFUNCTION(BlueprintPure, Category = "Turret")
 	class ACannon* GetActiveCannon() const;
 
+	UFUNCTION(BlueprintPure, Category = "Turret")
+	FVector GetTurretForwardVector();
+
 	virtual void TakeDamage(const FDamageData& DamageData) override;
-	int32 GetScores() const override;
+	int32 GetScore() const override;
+
+	UFUNCTION(BlueprintCallable, Category = "AI|Move params")
+		void SetPatrollingPoints(TArray<class ATargetPoint*>& InPoints)
+	{
+		PatrollingPoints = InPoints;
+	}
+
+	UFUNCTION(BlueprintPure, Category = "AI|Move params")
+		const TArray<class ATargetPoint*>& GetPatrollingPoints() const
+	{ 
+		return PatrollingPoints;
+	};
+
+	UFUNCTION(BlueprintPure, Category = "AI|Move params")
+		float GetMovementAccuracy() 
+	{
+		return MovementAccuracy;
+	};
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -113,4 +140,7 @@ private:
 	float CurrentRotateRightAxis = 0.f;
 
 	FVector TurretTargetPosition;
+	FVector TurretTargetDirection;
+	bool bIsTurretTargetSet = false;
+	float TurretRotationAxis = 0.f;
 };

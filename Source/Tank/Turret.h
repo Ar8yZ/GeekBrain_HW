@@ -40,6 +40,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ammo")
 	TSubclassOf<class ACannon> CannonClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class UParticleSystem* DestructionParticleSystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class USoundBase* DestructionSound;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Targeting")
 	float TargetingRange = 1000.f;
 
@@ -50,7 +56,7 @@ protected:
 	float Accuracy = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Scores")
-	int32 DestructionScores = 1;
+	int32 DestructionScore = 1;
 	 
 	const FString BodyMeshPath = "StaticMesh'/Game/CSC/Meshes/SM_CSC_Tower1.SM_CSC_Tower1'";
 	const FString TurretMeshPath = "StaticMesh'/Game/CSC/Meshes/SM_CSC_Gun1.SM_CSC_Gun1'";
@@ -83,5 +89,5 @@ public:
 public:
 	virtual void TakeDamage(const FDamageData& DamageData) override;
 
-	virtual int32 GetScores() const override;
+	virtual int32 GetScore() const override;
 };

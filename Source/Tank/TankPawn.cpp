@@ -13,6 +13,7 @@
 #include "Cannon.h"
 #include "Components/BoxComponent.h"
 #include "HealthComponent.h"
+#include "Scoreable.h"
 
 
 // Sets default values
@@ -48,9 +49,9 @@ ATankPawn::ATankPawn()
 	HealthComponent->OnHealthChanged.AddDynamic(this, &ATankPawn::OnHealthChanged);
 }
 
-int32 ATankPawn::GetScores() const
+int32 ATankPawn::GetScore() const
 {
-	return DestructionScores;
+	return DestructionScore;
 }
 
 // Called when the game starts or when spawned
@@ -75,6 +76,12 @@ void ATankPawn::Tick(float DeltaTime)
 	float Rotation = GetActorRotation().Yaw + CurrentRotateRightAxis * RotationSpeed * DeltaTime;
 	SetActorRotation(FRotator(0.f, Rotation, 0.f));
 
+	if (!bIsTurretTargetSet)
+	{
+		TurretTargetDirection = TurretTargetDirection.RotateAngleAxis(TurretRotationSmoothness * DeltaTime * TurretRotationAxis, FVector::UpVector);
+		TurretTargetPosition = GetActorLocation() + TurretTargetPosition;
+	}
+
 	FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TurretTargetPosition);
 	FRotator CurrentRotation = TurretMesh->GetComponentRotation();
 	TargetRotation.Roll = CurrentRotation.Roll;
@@ -95,6 +102,14 @@ void ATankPawn::RotateRight(float InAxisValue)
 void ATankPawn::SetTurretTargetPosition(const FVector& TargetPosition)
 {
 	TurretTargetPosition = TargetPosition;
+	bIsTurretTargetSet = true;
+}
+
+void ATankPawn::SetTurretRotationAxis(float AxisValue)
+{
+	TurretRotationAxis = AxisValue;
+	TurretTargetDirection = TurretTargetPosition - GetActorLocation();
+	bIsTurretTargetSet = false;
 }
 
 void ATankPawn::Fire()
@@ -148,6 +163,11 @@ void ATankPawn::CycleCannon()
 ACannon* ATankPawn::GetActiveCannon() const
 {
 	return ActiveCannon;
+}
+
+FVector ATankPawn::GetTurretForwardVector()
+{
+	return TurretMesh->GetForwardVector();
 }
 
 void ATankPawn::TakeDamage(const FDamageData& DamageData)
